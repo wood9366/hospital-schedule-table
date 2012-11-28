@@ -13,6 +13,7 @@ use Spreadsheet::WriteExcel;
 # set params
 my $year = shift @ARGV || 2012;
 my $month = shift @ARGV || 1;
+my $export_xlsname = shift @ARGV || '';
 my $showlog = shift @ARGV || 0;
 
 &log(4, "Year: $year, Month: $month\n");
@@ -151,19 +152,25 @@ sub print_table() {
     }
 }
 
-# sub export_table() {
-#     my $file = shift;
-#     my $sheet = shift;
+sub export_table() {
+    my $head = shift;
+    my $rows = shift;
+    my $filename = shift;
 
-#     my $path = File::Spec->catfile(getcwd(), $file);
+    my $path = File::Spec->catfile(getcwd(), $filename);
+    &log(0, "Export Table to $path\n");
 
-#     if not -e $path {
-# 	my $book = Spreadsheet::WriteExcel->new($path);
-# 	my $schedulesheet = $book->add_worksheet('schedule');
-#     } else {
-# 	&log(0, "File $path already exist\n";
-#     }
-# }
+    my $book = Spreadsheet::WriteExcel->new($path);
+    my $schedulesheet = $book->add_worksheet('schedule');
+    
+    unshift @$rows, $head;
+
+    while (my ($row, $cols) = each(@$rows)) {
+	while (my ($col, $it) = each(@$cols)) {
+	    $schedulesheet->write($row, $col, $it);
+	}
+    }
+}
 
 sub print_schedule() {
     my ($month, $workers) = (shift, shift);
@@ -195,9 +202,11 @@ sub print_schedule() {
 	    push @{$table[$daterowidx]}, ('');
 	}
 
+	push @{$table[$daterowidx]}, ("") x $info->{wday} if ($day == $days[0]);
 	push @{$table[$daterowidx]}, $info->{day};
+	push @{$table[$daterowidx]}, ("") x (6 - $info->{wday}) if ($day == $days[-1]);
 
-	# schedule content
+	# schedule content lines
 	while (my ($idx, $worker) = each (@workers)) {
 	    if ($newline) {
 		$rowindices[$idx] = $#table+1;
@@ -233,6 +242,7 @@ sub print_schedule() {
 
     print "Table: Schedule $month->{year}/$month->{month}\n";
     &print_table(\@head, \@table, 1, 1);
+    &export_table(\@head, \@table, $export_xlsname) if $export_xlsname;
 }
 
 sub print_stat() {
