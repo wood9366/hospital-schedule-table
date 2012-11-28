@@ -1,0 +1,47 @@
+#+TITLE:     Hospital Monthly Work Plan Infomation
+#+AUTHOR:    Li Yang
+#+EMAIL:     wood9366@gmail.com
+#+DATE:      2012-11-25 Sun
+#+DESCRIPTION:
+#+KEYWORDS:
+#+LANGUAGE:  en
+#+OPTIONS:   H:3 num:t toc:t \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t
+#+OPTIONS:   TeX:t LaTeX:t skip:nil d:nil todo:t pri:nil tags:not-in-toc
+#+INFOJS_OPT: view:nil toc:nil ltoc:t mouse:underline buttons:0 path:http://orgmode.org/org-info.js
+#+EXPORT_SELECT_TAGS: export
+#+EXPORT_EXCLUDE_TAGS: noexport
+#+LINK_UP:   
+#+LINK_HOME: 
+#+XSLT:
+
+* Rules
+- One work day (WD) includes 3 parts (P).
+  - Morning (M), 00:00 ~ 08:00, 8 hours, >= 2 person
+  - Daytime (D), 08:00 ~ 17:00, 9 hours (1 hour for launch), 1 person
+  - Night (N), 17:00 ~ 24:00, 7 hours, 1 person
+  - (M) + (D) x 2 + (N)
+- Everyone has some free days (FD) in each month, it depends on the totally offical number of free day (total sat + sun). Others are work day, no matter M, D or N.
+- (N) and (M) must link and count 2, (D) separated and count 1 (P). One worker may work (D) today or (N) today plus (M) tomorrow.
+- (N) should not link with (D) directly for same worker, it's to hard work for one person.
+- Some works only work on (D).
+- Some works want to links the (FD) of one month together.
+* Caluclation
+- First
+  - Total 6 person
+  - 2 person want to only work on Daytime
+  - 1 person want to link (FD) together
+  - 22 (WD) + 8 (FD) per month
+- One Daytime guy works 22 (WD) (D) + 8 (FD) per month
+- For 1 month
+  - number of (D) for 4 loop person
+    - 16(D) = 2(D) x 30 - 22(D) x 2.
+    - 16(D) / 4 = 4(D) daytime per person per month (dppm)
+  - number of (N), (M) for 4 loop person
+    - 30(M) = (M) x 30
+    - 30(N) = (N) x 30
+    - 30 / 4 = 7.5, 7.5(M)(N) morning/night per person per month (mppm, nppm)
+  - totally statistic
+    - Daytime guy: 22(D)
+    - Loop guy: 4(D) + 7.5(M) + 7.5(N) = 18
+* Refactor
+- [ ] free day after night part
