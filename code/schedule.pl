@@ -8,6 +8,23 @@ use POSIX;
 use File::Basename;
 use File::Spec;
 
+# set params
+my $year = shift @ARGV || 2012;
+my $month = shift @ARGV || 1;
+my $showlog = shift @ARGV || 0;
+
+&log(4, "Year: $year, Month: $month\n");
+
+sub log() {
+    my $lv = shift;
+    print @_ if $lv <= $showlog;
+}
+
+sub logf() {
+    my $lv = shift;
+    printf @_ if $lv <= $showlog;
+}
+
 sub init_monthes() {
     my $y = shift() - 1900;
     my $m = shift() - 1;
@@ -78,8 +95,8 @@ sub init_environment() {
     }
     my $ndworker = $nworker - $nlworker;
 
-    # print "Environment:\n";
-    # print "\tNumber of workers $nworker = (D)$ndworker + (L)$nlworker\n";
+    &log(4, "Environment:\n");
+    &log(4, "\tNumber of workers $nworker = (D)$ndworker + (L)$nlworker\n");
 
     return if $nworker <= 0 || $nlworker <= 0;
 
@@ -93,15 +110,15 @@ sub init_environment() {
     $month->{stat}{ald} = ($month->{stat}{nd} - $month->{stat}{add} * $ndworker) / $nlworker;
     $month->{stat}{aln} = $month->{stat}{nn} / $nlworker;
 
-    # print "\tWorks:\n";
-    # print "\t\tNumber of freeday: $month->{stat}{nf}\n";
-    # print "\t\tNumber: ".
-    # 	"$month->{stat}{np} = $month->{stat}{nm} + $month->{stat}{nd} + $month->{stat}{nn}\n";
-    # printf "\t\tAverage: %.2f\n", $month->{stat}{ap};
-    # printf "\t\tAverage for day time worker: (M)%.2f / (D)%.2f / (N)%.2f\n",
-    # 	$month->{stat}{adm}, $month->{stat}{add}, $month->{stat}{adn};
-    # printf "\t\tAverage for loop worker: (M)%.2f / (D)%.2f / (N)%.2f\n",
-    # 	$month->{stat}{alm}, $month->{stat}{ald}, $month->{stat}{aln};
+    &log(4, "\tWorks:\n");
+    &log(4, "\t\tNumber of freeday: $month->{stat}{nf}\n");
+    &log(4, "\t\tNumber: $month->{stat}{np} = ".
+	 "$month->{stat}{nm} + $month->{stat}{nd} + $month->{stat}{nn}\n");
+    &logf(4, "\t\tAverage: %.2f\n", $month->{stat}{ap});
+    &logf(4, "\t\tAverage for day time worker: (M)%.2f / (D)%.2f / (N)%.2f\n",
+	  $month->{stat}{adm}, $month->{stat}{add}, $month->{stat}{adn});
+    &logf(4, "\t\tAverage for loop worker: (M)%.2f / (D)%.2f / (N)%.2f\n",
+	  $month->{stat}{alm}, $month->{stat}{ald}, $month->{stat}{aln});
 }
 
 sub print_table() {
@@ -239,40 +256,36 @@ sub print_stat() {
 }
 
 sub print_worker() {
+    my $lv = shift;
     my $n = shift;
     my $indent = "\t" x $n;
-    print "${indent}Workers ".@_.": \n";
+    &log($lv, "${indent}Workers ".@_.": \n");
     while (my ($idx, $_) = each(@_)) {
-	print "${indent}\t$idx:\n";
-	printf "${indent}\t\t%15s: %021b\n", "fflag", $_->{fflag};
+	&log($lv, "${indent}\t$idx:\n");
+	&logf($lv, "${indent}\t\t%15s: %021b\n", "fflag", $_->{fflag});
 	while (my ($k, $v) = each(%$_)) {
 	    next if $k =~ /fflag/;
-	    printf "${indent}\t\t%15s: $v\n", $k;
+	    &logf($lv, "${indent}\t\t%15s: $v\n", $k);
 	}
     }
 }
 
 sub print_day() {
+    my $lv = shift;
     my $n = shift;
     my $indent = "\t" x $n;
-    print "${indent}Days ".@_.": \n";
+    &log($lv, "${indent}Days ".@_.": \n");
     while (my ($idx, $_) = each(@_)) {
-	print "${indent}\t$idx:\n";
+	&log($lv, "${indent}\t$idx:\n");
 	while (my ($k, $v) = each(%$_)) {
 	    if ($k =~ /^(m|d|n)$/) {
-		print "${indent}\t$k: @$v\n";
+		&log($lv, "${indent}\t$k: @$v\n");
 	    } else {
-		print "${indent}\t$k: $v\n";
+		&log($lv, "${indent}\t$k: $v\n");
 	    }
 	}
     }
 }
-
-# set params
-my $year = shift @ARGV || 2012;
-my $month = shift @ARGV || 1;
-
-# print "Year: $year, Month: $month\n";
 
 # init environment
 my %monthes = &init_monthes($year, $month);
@@ -282,29 +295,29 @@ my %workers = &init_workers(File::Spec->catfile($dir, "workers.csv"));
 
 &init_environment(\%workers, \%monthes);
 
-# # Test workers init
-# print "Workers: \n";
-# printf "\tFLAG => %07b%07b%07b\n", 1, 1, 1;
-# while (my ($name, $info) = each(%workers)) {
-#     print "Name: $name\n";
+# Test workers init
+&log(4, "Workers: \n");
+&logf(4, "\tFLAG => %07b%07b%07b\n", 1, 1, 1);
+while (my ($name, $info) = each(%workers)) {
+    &log(4, "Name: $name\n");
 
-#     printf "\tflag => %021b\n", $info->{fflag};
+    &logf(4, "\tflag => %021b\n", $info->{fflag});
 
-#     while (my ($k, $v) = each(%$info)) {
-# 	next if $k eq 'fflag';
-# 	printf "\t$k => $v\n";
-#     }
-# }
+    while (my ($k, $v) = each(%$info)) {
+	next if $k eq 'fflag';
+	&log(4, "\t$k => $v\n");
+    }
+}
 
 sub set_worker() {
     my $workers = shift || [];
     my $day = shift;
     my $part = shift;
 
-    # print "Set Worker Parameters:\n";
-    # &print_worker(1, @$workers);
-    # &print_day(1, $day);
-    # print "\tPart: $part\n";
+    &log(3, "Set Worker Parameters:\n");
+    &print_worker(3, 1, @$workers);
+    &print_day(3, 1, $day);
+    &log(3, "\tPart: $part\n");
 
     foreach my $worker (@{$workers}) {
 	if ($part =~ /m|d|n/) {
@@ -312,7 +325,7 @@ sub set_worker() {
 	    $worker->{a}++;
 	    push @{$day->{$part}}, $worker;
 	} else {
-	    print "Invalid part: $part\n";
+	    &log(4, "Invalid part: $part\n");
 	}
     }
 }
@@ -342,59 +355,59 @@ sub select_worker() {
     my $available_conds = shift;
     my $weight_cals = shift;
 
-    # print "Select Worker Params:\n";
-    # &print_worker(1, @$workers);
-    # &print_day(1, $day);
-    # print "\tPart: $part\n";
-    # print "\tNumber of workers: $num_workers\n";
-    # print "\tAvailable Conditions: \n";
-    # while (my ($k, $v) = each(%$available_conds)) {
-    # 	print "\t\t$k => $v\n";
-    # }
-    # print "\tWeight Calculations: \n";
-    # while (my ($k, $v) = each(%$weight_cals)) {
-    # 	print "\t\t$k => $v\n";
-    # }
+    &log(3, "Select Worker Params:\n");
+    &print_worker(3, 1, @$workers);
+    &print_day(3, 1, $day);
+    &log(3, "\tPart: $part\n");
+    &log(3, "\tNumber of workers: $num_workers\n");
+    &log(3, "\tAvailable Conditions: \n");
+    while (my ($k, $v) = each(%$available_conds)) {
+    	&log(3, "\t\t$k => $v\n");
+    }
+    &log(3, "\tWeight Calculations: \n");
+    while (my ($k, $v) = each(%$weight_cals)) {
+    	&log(3, "\t\t$k => $v\n");
+    }
 
     my @available_workers = ();
 
-    print "Select workers for '$part':\n";
+    &log(2, "Select workers for '$part':\n");
     foreach my $worker (@$workers) {
-	print "\tWorker '$worker->{name}':\n";
-	print "\t\tIs available:\n";
+	&log(2, "\tWorker '$worker->{name}':\n");
+	&log(2, "\t\tIs available:\n");
 	# filter not possible worker
 	my $is_available = 1;
 	keys %$available_conds; # reset each iterator
 	while (my ($name, $fn) = each(%$available_conds)) {
 	    $is_available = &$fn($day, $worker, $part);
-	    print "\t\t\t$name = $is_available\n";
+	    &log(2, "\t\t\t$name = $is_available\n");
 	    last if !$is_available;
 	}
 	next if !$is_available;
 
-	print "\t\tCalculate Weight:\n";
+	&log(2, "\t\tCalculate Weight:\n");
 	# calculate weight
 	$worker->{wd} = 0;
 	keys %$weight_cals; # reset each iterator
 	while (my ($name, $fn) = each (%$weight_cals)) {
 	    my $weight = &$fn($day, $worker, $part);
-	    printf "\t\t\t$name : + %.2f = ", $weight;
+	    &logf(2, "\t\t\t$name : + %.2f = ", $weight);
 	    $worker->{wd} += $weight;
-	    printf "%.2f\n", $worker->{wd};
+	    &logf(2, "%.2f\n", $worker->{wd});
 	}
-	printf "\t\tWeight = %.2f\n", $worker->{wd};
+	&logf(2, "\t\tWeight = %.2f\n", $worker->{wd});
 
 	push @available_workers, $worker;
     }
 
     @available_workers = sort { $b->{wd} <=> $a->{wd} } @available_workers;
-    print "\tAvailable workers: ".join(' ', map {$_->{name}} @available_workers)."\n";
+    &log(2, "\tAvailable workers: ".join(' ', map {$_->{name}} @available_workers)."\n");
     if (@available_workers) {
 	my @w = @available_workers[0..$num_workers-1];
-	print "\tSelected workers $num_workers: ".join(' ', map {$_->{name}} @w)."\n";
+	&log(2, "\tSelected workers $num_workers: ".join(' ', map {$_->{name}} @w)."\n");
 	&set_worker(\@w, $day, $part);
     } else {
-	print "No perfect $part worker for $day->{day}\n";
+	&log(0, "No perfect $part worker for $day->{day}\n");
     }
 }
 
@@ -479,7 +492,7 @@ sub wt_leftworkday() {
 
 # set work schedule
 foreach (sort { $a->{day} <=> $b->{day} } values %{$monthes{days}}) {
-    print "Begin Day $_->{day}.\n";
+    &log(2, "Begin Day $_->{day}.\n");
 
     my @workers = values %workers;
 
@@ -508,7 +521,7 @@ foreach (sort { $a->{day} <=> $b->{day} } values %{$monthes{days}}) {
     
     &day_pass($_);
     
-    print "End Day $_->{day}.\n";
+    &log(2, "End Day $_->{day}.\n");
 }
 
 # result
