@@ -7,6 +7,8 @@ use strict;
 use POSIX;
 use File::Basename;
 use File::Spec;
+use Cwd;
+use Spreadsheet::WriteExcel;
 
 # set params
 my $year = shift @ARGV || 2012;
@@ -149,6 +151,20 @@ sub print_table() {
     }
 }
 
+# sub export_table() {
+#     my $file = shift;
+#     my $sheet = shift;
+
+#     my $path = File::Spec->catfile(getcwd(), $file);
+
+#     if not -e $path {
+# 	my $book = Spreadsheet::WriteExcel->new($path);
+# 	my $schedulesheet = $book->add_worksheet('schedule');
+#     } else {
+# 	&log(0, "File $path already exist\n";
+#     }
+# }
+
 sub print_schedule() {
     my ($month, $workers) = (shift, shift);
     
@@ -157,6 +173,7 @@ sub print_schedule() {
 
     my $monthes = $month->{days};
     my @workers = sort {$a->{name} cmp $b->{name}} values %$workers;
+    my $daterowidx = 0;
     my @rowindices = ();
 
     my $dw = 2; # date width
@@ -169,8 +186,18 @@ sub print_schedule() {
 
 	my $newline = 0;
 	$newline = 1 if ($info->{wday} == 0) || ($day == $days[0]);
-	push @{$table[$#table+1]}, () if $newline && $day != $days[0];
 	
+	push @{$table[$#table+1]}, () if $newline && $day != $days[0]; # line
+
+	# date line
+	if ($newline) {
+	    $daterowidx = $#table + 1;
+	    push @{$table[$daterowidx]}, ('');
+	}
+
+	push @{$table[$daterowidx]}, $info->{day};
+
+	# schedule content
 	while (my ($idx, $worker) = each (@workers)) {
 	    if ($newline) {
 		$rowindices[$idx] = $#table+1;
@@ -193,9 +220,7 @@ sub print_schedule() {
 	    $dayworkname .= 'N' if ($daywork & 1);
 	    $dayworkname .= 'F' if $dayworkname eq '';
 
-	    my $dayout = sprintf "%${dw}s $dayworkname", $idx == 0 ? $info->{day} : '';
-
-	    push @{$table[$row]}, $dayout;
+	    push @{$table[$row]}, $dayworkname;
 
 	    if ($day == $days[-1]) {
 		my $c = 6 - $info->{wday};
