@@ -11,7 +11,7 @@ use File::Spec;
 sub init_monthes() {
     my $y = shift() - 1900;
     my $m = shift() - 1;
-    my %monthes;
+    my %monthes = (year => $y + 1900, month => $m + 1);
 
     my $num_day = (localtime(POSIX::mktime(0, 0, 0, 0, $m + 1, $y)))[3];
     foreach (1..$num_day) {
@@ -78,8 +78,8 @@ sub init_environment() {
     }
     my $ndworker = $nworker - $nlworker;
 
-    print "Environment:\n";
-    print "\tNumber of workers $nworker = (D)$ndworker + (L)$nlworker\n";
+    # print "Environment:\n";
+    # print "\tNumber of workers $nworker = (D)$ndworker + (L)$nlworker\n";
 
     return if $nworker <= 0 || $nlworker <= 0;
 
@@ -93,15 +93,15 @@ sub init_environment() {
     $month->{stat}{ald} = ($month->{stat}{nd} - $month->{stat}{add} * $ndworker) / $nlworker;
     $month->{stat}{aln} = $month->{stat}{nn} / $nlworker;
 
-    print "\tWorks:\n";
-    print "\t\tNumber of freeday: $month->{stat}{nf}\n";
-    print "\t\tNumber: ".
-	"$month->{stat}{np} = $month->{stat}{nm} + $month->{stat}{nd} + $month->{stat}{nn}\n";
-    printf "\t\tAverage: %.2f\n", $month->{stat}{ap};
-    printf "\t\tAverage for day time worker: (M)%.2f / (D)%.2f / (N)%.2f\n",
-	$month->{stat}{adm}, $month->{stat}{add}, $month->{stat}{adn};
-    printf "\t\tAverage for loop worker: (M)%.2f / (D)%.2f / (N)%.2f\n",
-	$month->{stat}{alm}, $month->{stat}{ald}, $month->{stat}{aln};
+    # print "\tWorks:\n";
+    # print "\t\tNumber of freeday: $month->{stat}{nf}\n";
+    # print "\t\tNumber: ".
+    # 	"$month->{stat}{np} = $month->{stat}{nm} + $month->{stat}{nd} + $month->{stat}{nn}\n";
+    # printf "\t\tAverage: %.2f\n", $month->{stat}{ap};
+    # printf "\t\tAverage for day time worker: (M)%.2f / (D)%.2f / (N)%.2f\n",
+    # 	$month->{stat}{adm}, $month->{stat}{add}, $month->{stat}{adn};
+    # printf "\t\tAverage for loop worker: (M)%.2f / (D)%.2f / (N)%.2f\n",
+    # 	$month->{stat}{alm}, $month->{stat}{ald}, $month->{stat}{aln};
 }
 
 sub print_table() {
@@ -132,32 +132,14 @@ sub print_table() {
     }
 }
 
-sub test_print_table() {
-    my @head = qw / S M T W T F S /;
-    my @table = (
-	[1..7],
-	[7..13],
-	[14..20],
-	);
-
-    push @table, [qw/a b c d e f g/];
-    push @{$table[$#table+1]}, 'aa';
-    push @{$table[-1]}, 'bb';
-    push @{$table[-1]}, 'cc';
-    push @{$table[-1]}, 'dd';
-    push @{$table[-1]}, 'ee';
-    push @{$table[-1]}, 'ff';
-    push @{$table[-1]}, 'gg';
-
-    &print_table(\@head, \@table, 1, 1);
-}
-
-sub print_result() {
-    my @head = qw / N S M T W T F S /;
+sub print_schedule() {
+    my ($month, $workers) = (shift, shift);
+    
+    my @head = qw / Name Sun Mon Tue Wed Thu Fri Sat /;
     my @table = ();
 
-    my $monthes = shift;
-    my @workers = sort {$a->{name} cmp $b->{name}} @_;
+    my $monthes = $month->{days};
+    my @workers = sort {$a->{name} cmp $b->{name}} values %$workers;
     my @rowindices = ();
 
     my $dw = 2; # date width
@@ -189,9 +171,9 @@ sub print_result() {
 
 	    my $daywork = &get_daywork($worker, $day);
 	    my $dayworkname = '';
-	    $dayworkname .= 'M' if ($daywork & 0b1);
-	    $dayworkname .= 'D' if ($daywork & 0b10);
-	    $dayworkname .= 'N' if ($daywork & 0b100);
+	    $dayworkname .= 'M' if ($daywork & 4);
+	    $dayworkname .= 'D' if ($daywork & 2);
+	    $dayworkname .= 'N' if ($daywork & 1);
 	    $dayworkname .= 'F' if $dayworkname eq '';
 
 	    my $dayout = sprintf "%${dw}s $dayworkname", $idx == 0 ? $info->{day} : '';
@@ -206,62 +188,54 @@ sub print_result() {
 	    }
 	}
     }
-    
+
+    print "Table: Schedule $month->{year}/$month->{month}\n";
     &print_table(\@head, \@table, 1, 1);
 }
 
-sub print_result_old() {
-    my @head = qw / S M T W T F S /;
-    my @table = ();
+sub print_stat() {
+    my ($month, $workers) = (shift, shift);
+    
+    my @head = qw / Name M D N Work Free /;
+    my @rows = ();
 
-    my ($year, $month, $monthes) = (shift, shift, shift);
-    my $name = shift || '';
+    # total stat
+    push @{$rows[$#rows+1]}, ('month',
+			      $month->{stat}{nm},
+			      $month->{stat}{nd},
+			      $month->{stat}{nn},
+			      $month->{stat}{np},
+			      $month->{stat}{nf});
+    
+    push @{$rows[$#rows+1]}, ();
 
-    my $dw = 2; # date width
-    my $nw = 6; # name width
+    # aver stat
+    push @{$rows[$#rows+1]}, ('average d',
+			      sprintf("%.2f", $month->{stat}{adm}),
+			      sprintf("%.2f", $month->{stat}{add}),
+			      sprintf("%.2f", $month->{stat}{adn}),
+			      '', '');
+    
+    push @{$rows[$#rows+1]}, ('average l',
+			      sprintf("%.2f", $month->{stat}{alm}),
+			      sprintf("%.2f", $month->{stat}{ald}),
+			      sprintf("%.2f", $month->{stat}{aln}),
+			      '', '');
 
-    my @days = sort {$a <=> $b} keys(%$monthes);
-
-    foreach (@days) {
-	my $day = $_;
-	my $info = $monthes->{$_};
-	
-	push @{$table[$#table+1]}, () if ($info->{wday} == 0) || ($day == $days[0]);
-	
-	if ($day == $days[0]) {
-	    my $c = $info->{wday};
-	    while ($c-- > 0) {
-		push @{$table[-1]}, "";
-	    }
-	}
-
-	my @m = map { $_->{name} } @{$info->{m}};
-	my @d = map { $_->{name} } @{$info->{d}};
-	my @n = map { $_->{name} } @{$info->{n}};
-
-	if ($name) {
-	    foreach ((@m, @d, @n)) {
-		$_ = "" if $_ ne $name;
-	    }
-	}
-
-	my $mtime = join(",", map { "%$_\$${nw}s" } 2..2+@m-1);
-	my $dtime = join(",", map { "%$_\$${nw}s" } 2+@m..2+@m+@d-1);
-	my $ntime = join(",", map { "%$_\$${nw}s" } 2+@m+@d..2+@m+@d+@n-1);
-	my $dayschedule = join("|", ($mtime, $dtime, $ntime));
-	my $dayout = sprintf "%${dw}d $dayschedule", $info->{day}, @m, @d, @n;
-
-	push @{$table[-1]}, $dayout;
-
-	if ($day == $days[-1]) {
-	    my $c = 6 - $info->{wday};
-	    while ($c-- > 0) {
-		push @{$table[-1]}, "";
-	    }
-	}
+    push @{$rows[$#rows+1]}, ();
+    
+    # workers stat
+    foreach (sort {$a->{name} cmp $b->{name}} values %$workers) {
+	push @{$rows[$#rows+1]}, ($_->{name},
+				  $_->{m},
+				  $_->{d},
+				  $_->{n},
+				  $_->{a},
+				  $_->{f});
     }
     
-    &print_table(\@head, \@table, 1, 1);
+    print "Table: Statistic $month->{year}/$month->{month}\n";
+    &print_table(\@head, \@rows, 1, 1);
 }
 
 sub print_worker() {
@@ -404,7 +378,7 @@ sub select_worker() {
 	keys %$weight_cals; # reset each iterator
 	while (my ($name, $fn) = each (%$weight_cals)) {
 	    my $weight = &$fn($day, $worker, $part);
-	    printf "\t\t\t$name : + %2.f = ", $weight;
+	    printf "\t\t\t$name : + %.2f = ", $weight;
 	    $worker->{wd} += $weight;
 	    printf "%.2f\n", $worker->{wd};
 	}
@@ -466,7 +440,7 @@ sub wt_freeday() {
 sub wt_nowork_lastday() {
     my ($day, $worker) = (shift, shift);
 
-    if (&get_daywork($worker, $day->{day} - 1)) {
+    if (&get_daywork($worker, $day->{day} - 1) == 0) {
 	1;
     } else {
 	0;
@@ -476,7 +450,7 @@ sub wt_nowork_lastday() {
 sub wt_nightwork_lastday() {
     my ($day, $worker) = (shift, shift);
 
-    if (&get_daywork($worker, $day->{day} - 1) & 0b1) {
+    if (&get_daywork($worker, $day->{day} - 1) & 1) {
 	1;
     } else {
 	0;
@@ -538,11 +512,5 @@ foreach (sort { $a->{day} <=> $b->{day} } values %{$monthes{days}}) {
 }
 
 # result
-&print_result($monthes{days}, values %workers);
-
-# foreach (sort {$a->{name} cmp $b->{name}} values %workers) {
-#     print "$_->{name} Result:\n";
-#     print "Work Day: $_->{a} = M($_->{m}) + D($_->{d}) + N($_->{n})\n";
-#     print "Free Day: $_->{f}\n";
-#     &print_result($monthes{days}, $_);
-# }
+&print_schedule(\%monthes, \%workers);
+&print_stat(\%monthes, \%workers);
