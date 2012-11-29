@@ -167,27 +167,48 @@ sub export_table() {
 
     unshift @$rows, $head;
 
-    my @gray = ();
-    my $m_color = $book->set_custom_color(34, '#0000FF');
-    my $d_color = $book->set_custom_color(35, '#BFBF00');
-    my $n_color = $book->set_custom_color(36, '#000000');
+    my $f_color = $book->set_custom_color(34, '#AFAFAF');
+    my $m_color = $book->set_custom_color(35, '#0000FF');
+    my $d_color = $book->set_custom_color(36, '#BFBF00');
+    my $n_color = $book->set_custom_color(37, '#000000');
+    my $bg_color = $book->set_custom_color(38, '#EFEFEF');
 
-    foreach (0..9) {
-	my $c = 0xFF - 0xF * ($_ + 1);
-	push @gray, $book->set_custom_color(24 + $_, $c, $c, $c);
+    my @colors = ();
+    my @colornames = ('#00DF00', '#00DF7F',
+		      '#00CF00', '#00CF7F',
+		      '#00BF00', '#00BF7F',
+		      '#00AF00', '#00AF7F',
+		      '#009F00', '#009F7F',
+		      '#008F00', '#008F7F',
+		      '#007F00', '#007F7F',
+		      '#006F00', '#006F7F',
+		      '#005F00', '#005F7F');
+
+    while (my ($idx, $name) = each(@colornames)) {
+	push @colors, $book->set_custom_color(10 + $idx, $name);
     }
-    
-    my $color = 1;
+
+    my $coloridx = 0;
+    my ($color0, $color1) = (9, 9);
 
     while (my ($row, $cols) = each(@$rows)) {
 	while (my ($col, $it) = each(@$cols)) {
-
+	    if ($col == 0) {
+		if ($it =~ /徐|黄|刘|冯|沈|陈/) {
+		    $coloridx += 2;
+		    ($color0, $color1) = ($colors[$coloridx], $colors[$coloridx + 1]);
+		} else {
+		    ($color0, $color1) = ($bg_color, $bg_color);
+		    $coloridx = 0;
+		}
+	    }
+	    
 	    my $format = $book->add_format(
-		bg_color => $col % 2 ? $gray[0] : $gray[1],
+		bg_color => $col % 2 ? $color0 : $color1,
 		align => 'center'
 		);
 
-	    $format->set_color($gray[3]) if ($it =~ /休/);
+	    $format->set_color($f_color) if ($it =~ /休/);
 	    $format->set_color($m_color) if ($it =~ /出/);
 	    $format->set_color($d_color) if ($it =~ /白/);
 	    $format->set_color($n_color) if ($it =~ /夜/);
