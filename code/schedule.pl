@@ -167,10 +167,34 @@ sub export_table() {
 
     unshift @$rows, $head;
 
+    my @gray = ();
+    my $m_color = $book->set_custom_color(34, '#0000FF');
+    my $d_color = $book->set_custom_color(35, '#BFBF00');
+    my $n_color = $book->set_custom_color(36, '#000000');
+
+    foreach (0..9) {
+	my $c = 0xFF - 0xF * ($_ + 1);
+	push @gray, $book->set_custom_color(24 + $_, $c, $c, $c);
+    }
+    
+    my $color = 1;
+
     while (my ($row, $cols) = each(@$rows)) {
 	while (my ($col, $it) = each(@$cols)) {
-	    $schedulesheet->write($row, $col, $it,
-				  $book->add_format(bg_color => $col % 2 ? 'gray' : 'white'));
+
+	    my $format = $book->add_format(
+		bg_color => $col % 2 ? $gray[0] : $gray[1],
+		align => 'center'
+		);
+
+	    $format->set_color($gray[3]) if ($it =~ /休/);
+	    $format->set_color($m_color) if ($it =~ /出/);
+	    $format->set_color($d_color) if ($it =~ /白/);
+	    $format->set_color($n_color) if ($it =~ /夜/);
+
+	    $format->set_bold() if ($row == 0 || $col == 0);
+	    
+	    $schedulesheet->write($row, $col, $it, $format);
 	}
     }
 }
@@ -237,20 +261,23 @@ sub print_schedule() {
     &print_table(\@head, \@table, 1, 1);
 
     # replace for xls export
+    foreach (@head) {
+	s/^Sun$/日/;
+	s/^Mon$/一/;
+	s/^Tue$/二/;
+	s/^Wed$/三/;
+	s/^Thu$/四/;
+	s/^Fri$/五/;
+	s/^Sat$/六/;
+	s/^Name$/姓名/;
+    }
+    
     foreach (@table) {
 	foreach (@$_) {
 	    s/^M$/出/;
 	    s/^D$/白/;
 	    s/^N$/夜/;
 	    s/^F$/休/;
-	    s/^Sun$/日/;
-	    s/^Mon$/一/;
-	    s/^Tue$/二/;
-	    s/^Wed$/三/;
-	    s/^Thu$/四/;
-	    s/^Fri$/五/;
-	    s/^Sat$/六/;
-	    s/^Name$/姓名/;
 	    if (exists $workers->{$_}) {
 		s/^$_$/$workers->{$_}{chinesename}/;
 		utf8::decode($_);
