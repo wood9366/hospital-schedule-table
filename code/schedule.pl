@@ -68,13 +68,14 @@ sub init_workers() {
 	next if /^(#.*)?$/;
 
 	my @items = split /,/;
-	my @flags = @items[1..$#items-1];
+	my @flags = @items[2..$#items-1];
 
 	while (my ($idx, $it) = each(@flags)) {
 	    $workers{$items[0]}{fflag} |= $it << $idx;
 	}
 
 	$workers{$items[0]}{name} = $items[0];
+	$workers{$items[0]}{chinesename} = $items[1];
 	$workers{$items[0]}{min_freeday} = $items[-1];
 	$workers{$items[0]}{a} = 0;
 	$workers{$items[0]}{d} = 0;
@@ -168,18 +169,6 @@ sub export_table() {
 
     while (my ($row, $cols) = each(@$rows)) {
 	while (my ($col, $it) = each(@$cols)) {
-	    $it =~ s/^M$/出/;
-	    $it =~ s/^D$/白/;
-	    $it =~ s/^N$/夜/;
-	    $it =~ s/^F$/休/;
-	    $it =~ s/^Sun$/日/;
-	    $it =~ s/^Mon$/一/;
-	    $it =~ s/^Tue$/二/;
-	    $it =~ s/^Wed$/三/;
-	    $it =~ s/^Thu$/四/;
-	    $it =~ s/^Fri$/五/;
-	    $it =~ s/^Sat$/六/;
-	    $it =~ s/^Name$/姓名/;
 	    $schedulesheet->write($row, $col, $it,
 				  $book->add_format(bg_color => $col % 2 ? 'gray' : 'white'));
 	}
@@ -229,12 +218,7 @@ sub print_schedule() {
 
 	    my $row = $rowindices[$idx];
 	    
-	    if ($day == $days[0]) {
-		my $c = $info->{wday};
-		while ($c-- > 0) {
-		    push @{$table[$row]}, "";
-		}
-	    }
+	    push @{$table[$row]}, ("") x $info->{wday} if ($day == $days[0]);
 
 	    my $daywork = &get_daywork($worker, $day);
 	    my $dayworkname = '';
@@ -245,17 +229,35 @@ sub print_schedule() {
 
 	    push @{$table[$row]}, $dayworkname;
 
-	    if ($day == $days[-1]) {
-		my $c = 6 - $info->{wday};
-		while ($c-- > 0) {
-		    push @{$table[$row]}, "";
-		}
-	    }
+	    push @{$table[$row]}, ("") x (6 - $info->{wday}) if ($day == $days[-1]);
 	}
     }
 
     print "Table: Schedule $month->{year}/$month->{month}\n";
     &print_table(\@head, \@table, 1, 1);
+
+    # replace for xls export
+    foreach (@table) {
+	foreach (@$_) {
+	    s/^M$/出/;
+	    s/^D$/白/;
+	    s/^N$/夜/;
+	    s/^F$/休/;
+	    s/^Sun$/日/;
+	    s/^Mon$/一/;
+	    s/^Tue$/二/;
+	    s/^Wed$/三/;
+	    s/^Thu$/四/;
+	    s/^Fri$/五/;
+	    s/^Sat$/六/;
+	    s/^Name$/姓名/;
+	    if (exists $workers->{$_}) {
+		s/^$_$/$workers->{$_}{chinesename}/;
+		utf8::decode($_);
+	    }
+	}
+    }
+    
     &export_table(\@head, \@table, $export_xlsname) if $export_xlsname;
 }
 
